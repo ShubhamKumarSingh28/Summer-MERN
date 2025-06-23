@@ -3,10 +3,10 @@ import React from 'react';
 import Header from './Header';
 import Footer from './Footer';
 
-function AppLayout({ children }) {
+function AppLayout({ children, userDetails, updateUserDetails }) {
   return (
     <div className="d-flex flex-column min-vh-100">
-      <Header />
+      <Header userDetails={userDetails} updateUserDetails={updateUserDetails} />
       <main className="flex-fill">{children}</main>
       <Footer />
     </div>

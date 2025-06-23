@@ -1,5 +1,6 @@
 // Login.js
 import React, { useState, Fragment } from "react";
+import axios from "axios";
 import {
   Button,
   Card,
@@ -29,46 +30,48 @@ const SocialLoginButton = () => (
   </Fragment>
 );
 
-const LoginForm = ({ onLogin, errors, message, handleChange, formData }) => {
-  return (
-    <Form className="pe-md-4" onSubmit={onLogin} noValidate>
-      {message && <p className="text-danger">{message}</p>}
-      <Form.Group className="mb-4 mt-2">
-        <Form.Label>Username</Form.Label>
-        <Form.Control
-          type="text"
-          name="username"
-          placeholder="Enter Username"
-          value={formData.username}
-          onChange={handleChange}
-          isInvalid={!!errors.username}
-        />
-        <Form.Control.Feedback type="invalid">
-          {errors.username}
-        </Form.Control.Feedback>
-      </Form.Group>
-      <Form.Group className="mb-2 mt-2">
-        <Form.Label>Password</Form.Label>
-        <Form.Control
-          type="password"
-          name="password"
-          placeholder="Enter Password"
-          value={formData.password}
-          onChange={handleChange}
-          isInvalid={!!errors.password}
-        />
-        <Form.Control.Feedback type="invalid">
-          {errors.password}
-        </Form.Control.Feedback>
-      </Form.Group>
-      <Form.Group className="mb-3">
-        <Form.Check type="checkbox" label="Remember me" />
-      </Form.Group>
-      <Button type="submit" className="ezy__signin11-btn-submit w-100">Log In</Button>
-      <Button type="button" className="w-100">Forgot your password?</Button>
-    </Form>
-  );
-};
+const LoginForm = ({ onLogin, errors, message, handleChange, formData }) => (
+  <Form className="pe-md-4" onSubmit={onLogin} noValidate>
+    {message && <p className="text-danger">{message}</p>}
+
+    <Form.Group className="mb-4 mt-2">
+      <Form.Label>Username</Form.Label>
+      <Form.Control
+        type="text"
+        name="username"
+        placeholder="Enter Username"
+        value={formData.username}
+        onChange={handleChange}
+        isInvalid={!!errors.username}
+      />
+      <Form.Control.Feedback type="invalid">
+        {errors.username}
+      </Form.Control.Feedback>
+    </Form.Group>
+
+    <Form.Group className="mb-2 mt-2">
+      <Form.Label>Password</Form.Label>
+      <Form.Control
+        type="password"
+        name="password"
+        placeholder="Enter Password"
+        value={formData.password}
+        onChange={handleChange}
+        isInvalid={!!errors.password}
+      />
+      <Form.Control.Feedback type="invalid">
+        {errors.password}
+      </Form.Control.Feedback>
+    </Form.Group>
+
+    <Form.Group className="mb-3">
+      <Form.Check type="checkbox" label="Remember me" />
+    </Form.Group>
+
+    <Button type="submit" className="ezy__signin11-btn-submit w-100">Log In</Button>
+    <Button type="button" className="w-100">Forgot your password?</Button>
+  </Form>
+);
 
 const Login = ({ updateUserDetails }) => {
   const [formData, setFormData] = useState({
@@ -98,17 +101,26 @@ const Login = ({ updateUserDetails }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
-      if (formData.username === "admin" && formData.password === "admin") {
-        updateUserDetails({
-          name: "John Cena",
-          email: "john@cena.com"
-        });
-        setMessage("Login successful");
-      } else {
-        setMessage("Invalid username or password");
+      const body = {
+        username: formData.username,
+        password: formData.password
+      };
+      const config = {
+        withCredentials: true
+      };
+      try {
+        const response = await axios.post(
+          "http://localhost:5001/auth/login",
+          body,
+          config
+        );
+        updateUserDetails(response.data.user); // ✅ Fixed: uses returned user object
+      } catch (error) {
+        console.log(error);
+        setMessage("Login failed");
       }
     }
   };
@@ -118,7 +130,8 @@ const Login = ({ updateUserDetails }) => {
       <Container>
         <Row className="justify-content-between h-100">
           <Col md={4} lg={6}>
-            <div className="ezy__signin11-bg-holder d-none d-md-block h-100"
+            <div
+              className="ezy__signin11-bg-holder d-none d-md-block h-100"
               style={{
                 backgroundImage: "url(https://cdn.easyfrontend.com/pictures/sign-in-up/sign5.jpg)",
               }}
