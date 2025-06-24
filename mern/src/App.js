@@ -2,6 +2,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Home from './Home';
 import Login from './Login';
+import Signup from './Signup';
 import AppLayout from './Layout/AppLayout';
 import Dashboard from './Pages/Dashboard';
 import { useState, useEffect } from 'react';
@@ -41,20 +42,24 @@ function App() {
         path="/"
         element={
           <AppLayout userDetails={userDetails} updateUserDetails={updateUserDetails}>
-            <Home userDetails={userDetails} />
+            {userDetails ? <Navigate to="/dashboard" /> : <Home />}
           </AppLayout>
         }
       />
       <Route
         path="/login"
         element={
-          userDetails ? (
-            <Navigate to="/dashboard" />
-          ) : (
-            <AppLayout userDetails={userDetails} updateUserDetails={updateUserDetails}>
-              <Login updateUserDetails={updateUserDetails} />
-            </AppLayout>
-          )
+          <AppLayout userDetails={userDetails} updateUserDetails={updateUserDetails}>
+            {userDetails ? <Navigate to="/dashboard" /> : <Login updateUserDetails={updateUserDetails} />}
+          </AppLayout>
+        }
+      />
+      <Route
+        path="/signup"
+        element={
+          <AppLayout userDetails={userDetails} updateUserDetails={updateUserDetails}>
+            {userDetails ? <Navigate to="/dashboard" /> : <Signup updateUserDetails={updateUserDetails} />}
+          </AppLayout>
         }
       />
       <Route
@@ -62,7 +67,7 @@ function App() {
         element={
           userDetails ? (
             <AppLayout userDetails={userDetails} updateUserDetails={updateUserDetails}>
-              <Dashboard userDetails={userDetails} />
+              <Dashboard user={userDetails} />
             </AppLayout>
           ) : (
             <Navigate to="/login" />

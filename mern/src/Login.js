@@ -35,17 +35,17 @@ const LoginForm = ({ onLogin, errors, message, handleChange, formData }) => (
     {message && <p className="text-danger">{message}</p>}
 
     <Form.Group className="mb-4 mt-2">
-      <Form.Label>Username</Form.Label>
+      <Form.Label>Email</Form.Label> {/* ✅ Changed label */}
       <Form.Control
-        type="text"
-        name="username"
-        placeholder="Enter Username"
-        value={formData.username}
+        type="email"
+        name="email" // ✅ Changed from username to email
+        placeholder="Enter Email"
+        value={formData.email}
         onChange={handleChange}
-        isInvalid={!!errors.username}
+        isInvalid={!!errors.email}
       />
       <Form.Control.Feedback type="invalid">
-        {errors.username}
+        {errors.email}
       </Form.Control.Feedback>
     </Form.Group>
 
@@ -75,7 +75,7 @@ const LoginForm = ({ onLogin, errors, message, handleChange, formData }) => (
 
 const Login = ({ updateUserDetails }) => {
   const [formData, setFormData] = useState({
-    username: "",
+    email: "", // ✅ Changed from username to email
     password: ""
   });
   const [errors, setErrors] = useState({});
@@ -91,8 +91,8 @@ const Login = ({ updateUserDetails }) => {
 
   const validate = () => {
     let newErrors = {};
-    if (!formData.username.trim()) {
-      newErrors.username = "Username is required";
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
     }
     if (!formData.password.trim()) {
       newErrors.password = "Password is required";
@@ -104,20 +104,16 @@ const Login = ({ updateUserDetails }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
-      const body = {
-        username: formData.username,
-        password: formData.password
-      };
-      const config = {
-        withCredentials: true
-      };
       try {
         const response = await axios.post(
           "http://localhost:5001/auth/login",
-          body,
-          config
+          {
+            email: formData.email, // ✅ Email used instead of username
+            password: formData.password
+          },
+          { withCredentials: true }
         );
-        updateUserDetails(response.data.user); // ✅ Fixed: uses returned user object
+        updateUserDetails(response.data.user);
       } catch (error) {
         console.log(error);
         setMessage("Login failed");
