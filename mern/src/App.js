@@ -1,80 +1,42 @@
-// App.js
-import { Routes, Route, Navigate } from 'react-router-dom';
-import Home from './Home';
-import Login from './Login';
-import Signup from './Signup';
-import AppLayout from './Layout/AppLayout';
-import Dashboard from './Pages/Dashboard';
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+// src/App.js
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+
+import Home from "./Home";
+import Login from "./Login";
+import Signup from "./Signup";
+import Dashboard from "./Pages/Dashboard";
+import LinksPage from "./Pages/LinksPage";
+import AppLayout from "./Layout/AppLayout";
 
 function App() {
-  const [userDetails, setUserDetails] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const updateUserDetails = (details) => {
-    setUserDetails(details);
-  };
-
-  useEffect(() => {
-    const isUserLoggedIn = async () => {
-      try {
-        const response = await axios.get(
-          "http://localhost:5001/auth/is-user-logged-in",
-          { withCredentials: true }
-        );
-        updateUserDetails(response.data.user);
-      } catch (error) {
-        console.log("Not logged in:", error.response?.data?.message || error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    isUserLoggedIn();
-  }, []);
-
-  if (loading) return <div>Loading...</div>;
+  const user = useSelector((state) => state.user.userDetails);
 
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={
-          <AppLayout userDetails={userDetails} updateUserDetails={updateUserDetails}>
-            {userDetails ? <Navigate to="/dashboard" /> : <Home />}
-          </AppLayout>
-        }
-      />
-      <Route
-        path="/login"
-        element={
-          <AppLayout userDetails={userDetails} updateUserDetails={updateUserDetails}>
-            {userDetails ? <Navigate to="/dashboard" /> : <Login updateUserDetails={updateUserDetails} />}
-          </AppLayout>
-        }
-      />
-      <Route
-        path="/signup"
-        element={
-          <AppLayout userDetails={userDetails} updateUserDetails={updateUserDetails}>
-            {userDetails ? <Navigate to="/dashboard" /> : <Signup updateUserDetails={updateUserDetails} />}
-          </AppLayout>
-        }
-      />
-      <Route
-        path="/dashboard"
-        element={
-          userDetails ? (
-            <AppLayout userDetails={userDetails} updateUserDetails={updateUserDetails}>
-              <Dashboard user={userDetails} />
-            </AppLayout>
-          ) : (
-            <Navigate to="/login" />
-          )
-        }
-      />
-    </Routes>
+    <Router>
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route
+            path="/login"
+            element={user ? <Navigate to="/dashboard" /> : <Login />}
+          />
+          <Route
+            path="/signup"
+            element={user ? <Navigate to="/dashboard" /> : <Signup />}
+          />
+          <Route
+            path="/dashboard"
+            element={user ? <Dashboard userDetails={user} /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/links"
+            element={user ? <LinksPage /> : <Navigate to="/login" />}
+          />
+        </Route>
+      </Routes>
+    </Router>
   );
 }
 

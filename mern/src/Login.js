@@ -1,171 +1,132 @@
-// Login.js
-import React, { useState, Fragment } from "react";
+// src/Login.js
+import React, { useState } from "react";
 import axios from "axios";
-import {
-  Button,
-  Card,
-  Col,
-  Container,
-  Form,
-  Row
-} from "react-bootstrap";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFacebook, faGoogle } from "@fortawesome/free-brands-svg-icons";
-import './Login.css';
+import { useDispatch } from "react-redux";
+import { setUser } from "./redux/userSlice";
+import { useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
+import jwtDecode from "jwt-decode";
+import { serverEndpoint } from "./config";
 
-const SocialLoginButton = () => (
-  <Fragment>
-    <Button variant="primary" className="ezy__signin11-btn w-100 d-flex align-items-center mb-3">
-      <span className="text-white fs-4 lh-1">
-        <FontAwesomeIcon icon={faFacebook} />
-      </span>
-      <span className="w-100 text-center text-white">Continue with Facebook</span>
-    </Button>
-    <Button variant="danger" className="ezy__signin11-btn w-100 d-flex align-items-center">
-      <span className="text-white fs-4 lh-1">
-        <FontAwesomeIcon icon={faGoogle} />
-      </span>
-      <span className="w-100 text-center text-white">Continue with Google</span>
-    </Button>
-  </Fragment>
-);
-
-const LoginForm = ({ onLogin, errors, message, handleChange, formData }) => (
-  <Form className="pe-md-4" onSubmit={onLogin} noValidate>
-    {message && <p className="text-danger">{message}</p>}
-
-    <Form.Group className="mb-4 mt-2">
-      <Form.Label>Email</Form.Label> {/* ✅ Changed label */}
-      <Form.Control
-        type="email"
-        name="email" // ✅ Changed from username to email
-        placeholder="Enter Email"
-        value={formData.email}
-        onChange={handleChange}
-        isInvalid={!!errors.email}
-      />
-      <Form.Control.Feedback type="invalid">
-        {errors.email}
-      </Form.Control.Feedback>
-    </Form.Group>
-
-    <Form.Group className="mb-2 mt-2">
-      <Form.Label>Password</Form.Label>
-      <Form.Control
-        type="password"
-        name="password"
-        placeholder="Enter Password"
-        value={formData.password}
-        onChange={handleChange}
-        isInvalid={!!errors.password}
-      />
-      <Form.Control.Feedback type="invalid">
-        {errors.password}
-      </Form.Control.Feedback>
-    </Form.Group>
-
-    <Form.Group className="mb-3">
-      <Form.Check type="checkbox" label="Remember me" />
-    </Form.Group>
-
-    <Button type="submit" className="ezy__signin11-btn-submit w-100">Log In</Button>
-    <Button type="button" className="w-100">Forgot your password?</Button>
-  </Form>
-);
-
-const Login = ({ updateUserDetails }) => {
-  const [formData, setFormData] = useState({
-    email: "", // ✅ Changed from username to email
-    password: ""
-  });
+const Login = () => {
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState(null);
 
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const handleChange = (e) => {
-    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [e.target.name]: e.target.value,
     }));
-  };
-
-  const validate = () => {
-    let newErrors = {};
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    }
-    if (!formData.password.trim()) {
-      newErrors.password = "Password is required";
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validate()) {
-      try {
-        const response = await axios.post(
-          "http://localhost:5001/auth/login",
-          {
-            email: formData.email, // ✅ Email used instead of username
-            password: formData.password
-          },
-          { withCredentials: true }
-        );
-        updateUserDetails(response.data.user);
-      } catch (error) {
-        console.log(error);
-        setMessage("Login failed");
+    setErrors({});
+    setMessage(null);
+
+    try {
+      const res = await axios.post(
+        `${serverEndpoint}/auth/login`,
+        formData,
+        { withCredentials: true }
+      );
+
+      dispatch(setUser(res.data.user));
+      navigate("/dashboard");
+    } catch (err) {
+      if (err.response?.data?.errors) {
+        // Validation errors from server
+        const serverErrors = {};
+        err.response.data.errors.forEach((error) => {
+          serverErrors[error.param] = error.msg;
+        });
+        setErrors(serverErrors);
+      } else if (err.response?.data?.message) {
+        // Other server messages (e.g. invalid credentials)
+        setMessage(err.response.data.message);
+      } else {
+        setMessage("Login failed. Please try again.");
       }
     }
   };
 
+  const handleGoogleLogin = async (credentialResponse) => {
+    setMessage(null);
+    try {
+      // Decode token if you want user info here:
+      // const decoded = jwtDecode(credentialResponse.credential);
+
+      const res = await axios.post(
+        `${serverEndpoint}/auth/google-login`,
+        {
+          credential: credentialResponse.credential,
+        },
+        { withCredentials: true }
+      );
+
+      dispatch(setUser(res.data.user));
+      navigate("/dashboard");
+    } catch (err) {
+      setMessage("Google login failed.");
+    }
+  };
+
   return (
-    <section className="ezy__signin11 light d-flex">
-      <Container>
-        <Row className="justify-content-between h-100">
-          <Col md={4} lg={6}>
-            <div
-              className="ezy__signin11-bg-holder d-none d-md-block h-100"
-              style={{
-                backgroundImage: "url(https://cdn.easyfrontend.com/pictures/sign-in-up/sign5.jpg)",
-              }}
-            />
-          </Col>
-          <Col md={8} lg={6} className="py-4">
-            <div className="px-4">
-              <Card className="ezy__signin11-form-card">
-                <Card.Body className="p-md-5">
-                  <h2 className="ezy__signin11-heading mb-3">Welcome to Easy Frontend</h2>
-                  <p className="mb-4 mb-md-5">
-                    <span className="mb-0 opacity-50 lh-1">Don't have an account?</span>
-                    <Button variant="link" className="py-0 text-dark text-decoration-none">
-                      Create account
-                    </Button>
-                  </p>
+    <div className="container mt-5" style={{ maxWidth: "500px" }}>
+      <h2 className="mb-4 text-center">Login</h2>
 
-                  <LoginForm
-                    onLogin={handleSubmit}
-                    errors={errors}
-                    message={message}
-                    handleChange={handleChange}
-                    formData={formData}
-                  />
+      {message && <div className="alert alert-danger">{message}</div>}
 
-                  <div className="position-relative ezy__signin11-or-separator">
-                    <hr className="my-4 my-md-5" />
-                    <span className="px-2">Or</span>
-                  </div>
+      <form onSubmit={handleSubmit} noValidate>
+        <div className="mb-3">
+          <label htmlFor="email" className="form-label">Email</label>
+          <input
+            id="email"
+            type="email"
+            name="email"
+            className={`form-control ${errors.email ? "is-invalid" : ""}`}
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+          {errors.email && (
+            <div className="invalid-feedback">{errors.email}</div>
+          )}
+        </div>
 
-                  <SocialLoginButton />
-                </Card.Body>
-              </Card>
-            </div>
-          </Col>
-        </Row>
-      </Container>
-    </section>
+        <div className="mb-3">
+          <label htmlFor="password" className="form-label">Password</label>
+          <input
+            id="password"
+            type="password"
+            name="password"
+            className={`form-control ${errors.password ? "is-invalid" : ""}`}
+            value={formData.password}
+            onChange={handleChange}
+            required
+          />
+          {errors.password && (
+            <div className="invalid-feedback">{errors.password}</div>
+          )}
+        </div>
+
+        <button type="submit" className="btn btn-primary w-100">
+          Login
+        </button>
+      </form>
+
+      <div className="text-center mt-4">
+        <p>Or login with</p>
+        <GoogleLogin
+          onSuccess={handleGoogleLogin}
+          onError={() => setMessage("Google login failed")}
+        />
+      </div>
+    </div>
   );
 };
 

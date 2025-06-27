@@ -1,48 +1,82 @@
-// AppLayout.js
+// src/Layout/AppLayout.js
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { clearUser } from '../redux/userSlice';
 
-const AppLayout = ({ children, userDetails, updateUserDetails }) => {
+const AppLayout = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const user = useSelector(state => state.user.userDetails);
 
-  const handleLogout = async () => {
-    try {
-      await axios.post("http://localhost:5001/auth/logout", {}, { withCredentials: true });
-      updateUserDetails(null);
-      navigate("/login");
-    } catch (error) {
-      console.error("Logout failed:", error.message);
-    }
+  const handleLogout = () => {
+    dispatch(clearUser());
+    navigate('/login');
   };
 
   return (
-    <div>
-      <header style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '1rem 2rem',
-        backgroundColor: '#f0f0f0',
-        borderBottom: '1px solid #ccc',
-      }}>
-        <div>
-          {userDetails && (
-            <button onClick={handleLogout} style={{ marginRight: '1rem' }}>
-              Logout
-            </button>
-          )}
+    <>
+      {/* Navbar */}
+      <nav className="navbar navbar-expand-lg navbar-light bg-light">
+        <div className="container">
+          <NavLink className="navbar-brand" to="/">MyApp</NavLink>
+
+          <button
+            className="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarNav"
+            aria-controls="navbarNav"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span className="navbar-toggler-icon" />
+          </button>
+
+          <div className="collapse navbar-collapse" id="navbarNav">
+            <ul className="navbar-nav ms-auto">
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/">Home</NavLink>
+              </li>
+
+              {!user ? (
+                <>
+                  <li className="nav-item">
+                    <NavLink className="nav-link" to="/login">Login</NavLink>
+                  </li>
+                  <li className="nav-item">
+                    <NavLink className="nav-link" to="/signup">Signup</NavLink>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li className="nav-item">
+                    <NavLink className="nav-link" to="/dashboard">Dashboard</NavLink>
+                  </li>
+                  <li className="nav-item">
+                    <NavLink className="nav-link" to="/links">Links</NavLink>
+                  </li>
+                  <li className="nav-item">
+                    <button
+                      className="btn btn-link nav-link"
+                      onClick={handleLogout}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      Logout
+                    </button>
+                  </li>
+                </>
+              )}
+            </ul>
+          </div>
         </div>
+      </nav>
 
-        <nav>
-          <Link to="/" style={{ marginRight: '1rem' }}>Home</Link>
-        </nav>
-      </header>
-
-      <main style={{ padding: '2rem' }}>
-        {children}
+      {/* Page Content */}
+      <main>
+        <Outlet />
       </main>
-    </div>
+    </>
   );
 };
 
